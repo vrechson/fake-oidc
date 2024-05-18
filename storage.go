@@ -7,7 +7,7 @@ import (
 
 type inmemStorage struct {
 	config config
-	client client
+	client clientWithRedirectGlobs
 
 	signingKey *signingKey
 

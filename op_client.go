@@ -13,8 +13,9 @@ type client struct {
 	secret string
 }
 
-func newClient(config config) client {
-	return client{config: config, id: "dev-client", secret: "secure-secret"}
+func newClient(config config) clientWithRedirectGlobs {
+	c := &client{config: config, id: "dev-client", secret: "secure-secret"}
+	return clientWithRedirectGlobs{c}
 }
 
 func (c *client) GetID() string {
@@ -22,10 +23,12 @@ func (c *client) GetID() string {
 }
 
 func (c *client) RedirectURIs() []string {
-	return []string{"http://localhost:3000/auth/complete"}
+	// implementing HasRedirectGlobs instead
+	return []string{}
 }
 
 func (c *client) PostLogoutRedirectURIs() []string {
+	// implementing HasRedirectGlobs instead
 	return c.RedirectURIs()
 }
 
@@ -58,7 +61,7 @@ func (c *client) IDTokenLifetime() time.Duration {
 }
 
 func (c *client) DevMode() bool {
-	return false
+	return true
 }
 
 func (c *client) RestrictAdditionalIdTokenScopes() func(scopes []string) []string {
@@ -83,4 +86,22 @@ func (c *client) IDTokenUserinfoClaimsAssertion() bool {
 
 func (c *client) ClockSkew() time.Duration {
 	return time.Second * 0
+}
+
+// HasRedirectGlobs
+
+type clientWithRedirectGlobs struct {
+	*client
+}
+
+var _ op.HasRedirectGlobs = (*client)(nil)
+
+func (c *client) RedirectURIGlobs() []string {
+	// op uses bmatcuk/doublestar package to match globs
+	return []string{"**"}
+}
+
+func (c *client) PostLogoutRedirectURIGlobs() []string {
+	// op uses bmatcuk/doublestar package to match globs
+	return []string{"**"}
 }

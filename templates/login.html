@@ -6,13 +6,16 @@
   </head>
   <body>
     <h2>Login to Fake OIDC</h2>
+
+    <p>
+      Complete the form or add a username query parameter to complete login.
+    </p>
+
     <form method="POST" action="/login">
       <label
         >Username
         <input name="username" autocomplete="off" />
       </label>
-
-      <p>{{.Message}}</p>
 
       <button type="submit">Login</button>
 

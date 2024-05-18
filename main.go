@@ -1,35 +1,40 @@
 package main
 
 import (
-	"context"
 	"crypto/sha256"
-	"embed"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/zitadel/oidc/v3/pkg/op"
 )
 
 type config struct {
 	origin string
+	port   string
 }
 
 func main() {
-	port := "7835"
+	config := newConfig()
 
-	fmt.Printf("starting fake oidc server on :%s\n", port)
+	fmt.Printf("starting fake oidc server on :%s\n", config.port)
 
 	r := chi.NewRouter()
+
+	r.Use(func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// signing keys will change if restarted, so tell clients to never cache responses
+			w.Header().Add("cache-control", "no-store, no-store, must-revalidate")
+			w.Header().Add("pragma", "no-cache")
+			w.Header().Add("expires", "0")
+			h.ServeHTTP(w, r)
+		})
+	})
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })
 
-	origin := fmt.Sprintf("http://localhost:%s", port)
-	config := config{origin}
 	storage := newStorage(config)
 	provider, err := newProvider(config, storage)
 	if err != nil {
@@ -40,10 +45,11 @@ func main() {
 
 	r.Mount("/", provider.Handler)
 
-	r.Get("/login", loginForm())
-	r.Post("/login", loginPost(storage, op.NewIssuerInterceptor(provider.IssuerFromRequest), op.AuthCallbackURL(provider)))
+	interceptor := op.NewIssuerInterceptor(provider.IssuerFromRequest)
+	r.Get("/login", interceptor.HandlerFunc(loginForm(storage, op.AuthCallbackURL(provider))))
+	r.Post("/login", interceptor.HandlerFunc(loginPost(storage, op.AuthCallbackURL(provider))))
 
-	http.ListenAndServe(":"+port, r)
+	http.ListenAndServe(":"+config.port, r)
 }
 
 func newProvider(appConfig config, s *inmemStorage) (*op.Provider, error) {
@@ -51,7 +57,7 @@ func newProvider(appConfig config, s *inmemStorage) (*op.Provider, error) {
 		CryptoKey:             sha256.Sum256([]byte("fake-oidc-key")),
 		CodeMethodS256:        true,
 		GrantTypeRefreshToken: true,
-		SupportedClaims:       []string{"openid", "access"},
+		SupportedClaims:       []string{},
 	}
 	provider, err := op.NewProvider(
 		&config,
@@ -63,66 +69,14 @@ func newProvider(appConfig config, s *inmemStorage) (*op.Provider, error) {
 	return provider, err
 }
 
-// login page things
-
-var (
-	//go:embed templates
-	fs        embed.FS
-	templates = template.Must(template.ParseFS(fs, "templates/*.html"))
-)
-
-func loginForm() func(w http.ResponseWriter, r *http.Request) {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		authRequestID := r.FormValue("authRequestID")
-
-		data := &struct {
-			ID      string
-			Message string
-		}{ID: authRequestID, Message: ""}
-		err := templates.ExecuteTemplate(w, "login", data)
-		if err != nil {
-			slog.Error("html error: %v", err)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+func newConfig() config {
+	port := os.Getenv("FAKE_OIDC_HTTP_PORT")
+	if len(port) == 0 {
+		port = "7835"
 	}
-}
 
-func loginPost(s *inmemStorage, issuerIntercepter *op.IssuerInterceptor, buildCallbackURL func(context.Context, string) string) func(w http.ResponseWriter, r *http.Request) {
-
-	return issuerIntercepter.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		username := r.FormValue("username")
-		authRequestID := r.FormValue("id")
-
-		if len(username) == 0 {
-			slog.Error("username too short")
-			w.WriteHeader(http.StatusBadRequest)
-		}
-
-		s.lock.Lock()
-		defer s.lock.Unlock()
-
-		var existingUser *user
-		for _, v := range s.users {
-			if v.username == username {
-				existingUser = v
-			}
-		}
-
-		if existingUser == nil {
-			user := user{
-				id:       uuid.NewString(),
-				name:     strings.ToUpper(username[:1]) + username[1:],
-				username: username,
-			}
-			s.users[user.id] = &user
-			existingUser = &user
-		}
-
-		s.authRequests[authRequestID].subject = existingUser.id
-		s.authRequests[authRequestID].done = true
-
-		callbackURL := buildCallbackURL(r.Context(), authRequestID)
-		http.Redirect(w, r, callbackURL, http.StatusTemporaryRedirect)
-	})
+	return config{
+		port:   port,
+		origin: fmt.Sprintf("http://localhost:%s", port),
+	}
 }
