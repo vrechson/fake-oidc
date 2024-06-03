@@ -9,7 +9,7 @@ import (
 )
 
 func makeAKey() *signingKey {
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	key, err := rsa.GenerateKey(rand.Reader, 16)
 	if err != nil {
 		panic(err)
 	}
