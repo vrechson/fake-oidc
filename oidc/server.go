@@ -27,12 +27,12 @@ type config struct {
 // If the port is 0, the server will bind an available port.
 // The port should not be prefixed with a colon.
 func NewServer(port string) (*Server, error) {
-	config := config{origin: "http://localhost:" + port}
-
 	ln, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return nil, fmt.Errorf("could not bind port: %w", err)
 	}
+
+	config := config{origin: "http://" + ln.Addr().String()}
 
 	r := chi.NewRouter()
 
