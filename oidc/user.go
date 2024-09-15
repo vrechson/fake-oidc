@@ -1,4 +1,4 @@
-package main
+package oidc
 
 type user struct {
 	id       string

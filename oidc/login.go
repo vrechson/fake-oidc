@@ -1,8 +1,9 @@
-package main
+package oidc
 
 import (
 	"context"
 	"embed"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -33,7 +34,7 @@ func loginForm(s *inmemStorage, buildCallbackURL func(context.Context, string) s
 			}{ID: authRequestID}
 			err := templates.ExecuteTemplate(w, "login", data)
 			if err != nil {
-				slog.Error("html error: %v", err)
+				_, _ = w.Write([]byte(fmt.Sprintf("html error: %v", err)))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}
