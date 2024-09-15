@@ -15,8 +15,6 @@ func main() {
 		port = "7835"
 	}
 
-	fmt.Printf("starting fake oidc server on :%s\n", port)
-
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
@@ -25,6 +23,8 @@ func main() {
 		log.Fatalf("could not create fake-oidc server: %v", err)
 		return
 	}
+
+	fmt.Printf("starting fake oidc server on %s\n", server.GetBoundAddr())
 
 	go func() {
 		err = server.Open()

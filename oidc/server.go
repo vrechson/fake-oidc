@@ -13,8 +13,8 @@ import (
 )
 
 type Server struct {
-	sv        *http.Server
-	boundAddr string
+	sv *http.Server
+	ln net.Listener
 
 	port string
 }
@@ -28,6 +28,11 @@ type config struct {
 // The port should not be prefixed with a colon.
 func NewServer(port string) (*Server, error) {
 	config := config{origin: "http://localhost:" + port}
+
+	ln, err := net.Listen("tcp", ":"+port)
+	if err != nil {
+		return nil, fmt.Errorf("could not bind port: %w", err)
+	}
 
 	r := chi.NewRouter()
 
@@ -57,6 +62,7 @@ func NewServer(port string) (*Server, error) {
 
 	server := &Server{
 		port: port,
+		ln:   ln,
 		sv: &http.Server{
 			Handler: r,
 		},
@@ -67,14 +73,7 @@ func NewServer(port string) (*Server, error) {
 
 // Begins running the HTTP server. You probably want to call this in a Goroutine.
 func (s *Server) Open() error {
-	ln, err := net.Listen("tcp", ":"+s.port)
-	if err != nil {
-		return err
-	}
-
-	s.boundAddr = ln.Addr().String()
-
-	return s.sv.Serve(ln)
+	return s.sv.Serve(s.ln)
 }
 
 // Closes the HTTP server.
@@ -87,7 +86,7 @@ func (s *Server) Close() error {
 // Returns the address the server is running on.
 // Useful if you've bound a random port.
 func (s *Server) GetBoundAddr() string {
-	return s.boundAddr
+	return s.ln.Addr().String()
 }
 
 func newProvider(appConfig config, s *inmemStorage) (*op.Provider, error) {
