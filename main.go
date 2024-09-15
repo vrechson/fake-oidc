@@ -18,7 +18,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	server, err := oidc.NewServer(port)
+	server, err := oidc.NewServer(port, false)
 	if err != nil {
 		log.Fatalf("could not create fake-oidc server: %v", err)
 		return

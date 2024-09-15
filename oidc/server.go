@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -20,19 +22,20 @@ type Server struct {
 }
 
 type config struct {
-	origin string
+	origin    string
+	shouldLog bool
 }
 
 // Creates a new fake-oidc on the specified port.
 // If the port is 0, the server will bind an available port.
 // The port should not be prefixed with a colon.
-func NewServer(port string) (*Server, error) {
+func NewServer(port string, shouldLog bool) (*Server, error) {
 	ln, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return nil, fmt.Errorf("could not bind port: %w", err)
 	}
 
-	config := config{origin: "http://" + ln.Addr().String()}
+	config := config{origin: "http://" + ln.Addr().String(), shouldLog: shouldLog}
 
 	r := chi.NewRouter()
 
@@ -96,11 +99,20 @@ func newProvider(appConfig config, s *inmemStorage) (*op.Provider, error) {
 		GrantTypeRefreshToken: true,
 		SupportedClaims:       []string{},
 	}
+
+	args := []op.Option{
+		op.WithAllowInsecure(),
+	}
+
+	if !appConfig.shouldLog {
+		args = append(args, op.WithLogger(slog.New(slog.NewJSONHandler(io.Discard, nil))))
+	}
+
 	provider, err := op.NewProvider(
 		&config,
 		s,
 		op.StaticIssuer(appConfig.origin),
-		op.WithAllowInsecure(),
+		args...,
 	)
 
 	return provider, err

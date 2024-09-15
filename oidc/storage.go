@@ -14,7 +14,7 @@ type inmemStorage struct {
 	// below are locked by mutex
 	lock sync.Mutex
 
-	authRequests         map[string]*AuthRequest // request id => request
+	authRequests         map[string]*authRequest // request id => request
 	authCodes            map[string]string       // auth code => request id
 	users                map[string]*user
 	tokens               map[string]*accessToken
@@ -30,7 +30,7 @@ func newStorage(config config) *inmemStorage {
 		signingKey: makeAKey(),
 
 		lock:                 sync.Mutex{},
-		authRequests:         map[string]*AuthRequest{},
+		authRequests:         map[string]*authRequest{},
 		authCodes:            map[string]string{},
 		users:                map[string]*user{},
 		tokens:               map[string]*accessToken{},

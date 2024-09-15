@@ -17,7 +17,7 @@ func (s *inmemStorage) CreateAuthRequest(ctx context.Context, req *oidc.AuthRequ
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	authRequest := &AuthRequest{
+	authRequest := &authRequest{
 		id: uuid.New().String(),
 
 		audience: req.ClientID,

@@ -6,7 +6,7 @@ import (
 	"github.com/zitadel/oidc/v3/pkg/oidc"
 )
 
-type AuthRequest struct {
+type authRequest struct {
 	id            string
 	audience      string
 	authTime      time.Time
@@ -22,48 +22,48 @@ type AuthRequest struct {
 	done          bool
 }
 
-func (r *AuthRequest) GetID() string {
+func (r *authRequest) GetID() string {
 	return r.id
 }
-func (r *AuthRequest) GetACR() string {
+func (r *authRequest) GetACR() string {
 	return ""
 }
-func (r *AuthRequest) GetAMR() []string {
+func (r *authRequest) GetAMR() []string {
 	return []string{}
 }
-func (r *AuthRequest) GetAudience() []string {
+func (r *authRequest) GetAudience() []string {
 	return []string{r.audience}
 }
-func (r *AuthRequest) GetAuthTime() time.Time {
+func (r *authRequest) GetAuthTime() time.Time {
 	return r.authTime
 }
-func (r *AuthRequest) GetClientID() string {
+func (r *authRequest) GetClientID() string {
 	return r.clientID
 }
-func (r *AuthRequest) GetCodeChallenge() *oidc.CodeChallenge {
+func (r *authRequest) GetCodeChallenge() *oidc.CodeChallenge {
 	return r.codeChallenge
 }
-func (r *AuthRequest) GetNonce() string {
+func (r *authRequest) GetNonce() string {
 	return r.nonce
 }
-func (r *AuthRequest) GetRedirectURI() string {
+func (r *authRequest) GetRedirectURI() string {
 	return r.redirectURI
 }
-func (r *AuthRequest) GetResponseType() oidc.ResponseType {
+func (r *authRequest) GetResponseType() oidc.ResponseType {
 	return r.responseType
 }
-func (r *AuthRequest) GetResponseMode() oidc.ResponseMode {
+func (r *authRequest) GetResponseMode() oidc.ResponseMode {
 	return r.responseMode
 }
-func (r *AuthRequest) GetScopes() []string {
+func (r *authRequest) GetScopes() []string {
 	return r.scopes
 }
-func (r *AuthRequest) GetState() string {
+func (r *authRequest) GetState() string {
 	return r.state
 }
-func (r *AuthRequest) GetSubject() string {
+func (r *authRequest) GetSubject() string {
 	return r.subject
 }
-func (r *AuthRequest) Done() bool {
+func (r *authRequest) Done() bool {
 	return r.done
 }
