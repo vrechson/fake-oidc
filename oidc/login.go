@@ -2,14 +2,14 @@ package oidc
 
 import (
 	"context"
+	"crypto/sha1"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -75,8 +75,10 @@ func completeLogin(
 	}
 
 	if existingUser == nil {
+		h := sha1.New()
+		h.Write([]byte(username))
 		user := user{
-			id:       uuid.NewString(),
+			id:       hex.EncodeToString(h.Sum(nil)),
 			name:     strings.ToUpper(username[:1]) + username[1:],
 			username: username,
 		}
