@@ -29,8 +29,8 @@ type config struct {
 // Creates a new fake-oidc on the specified port.
 // If the port is 0, the server will bind an available port.
 // The port should not be prefixed with a colon.
-func NewServer(port string, shouldLog bool) (*Server, error) {
-	ln, err := net.Listen("tcp", ":"+port)
+func NewServer(host string, port string, shouldLog bool) (*Server, error) {
+	ln, err := net.Listen("tcp", host+":"+port)
 	if err != nil {
 		return nil, fmt.Errorf("could not bind port: %w", err)
 	}

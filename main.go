@@ -15,10 +15,12 @@ func main() {
 		port = "7835"
 	}
 
+	host := os.Getenv("FAKE_OIDC_HTTP_HOST")
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	server, err := oidc.NewServer(port, false)
+	server, err := oidc.NewServer(host, port, false)
 	if err != nil {
 		log.Fatalf("could not create fake-oidc server: %v", err)
 		return
