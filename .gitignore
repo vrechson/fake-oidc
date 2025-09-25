@@ -1,1 +1,21 @@
 .DS_Store
+
+# TLS certificates and keys
+certs/
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Configuration files (use .sample files instead)
+config.json
+test-config.json
+config-no-tls.json
+
+# Build artifacts
+fake-oidc
+*.exe
+
+# Test directory (contains test scripts and data)
+test/
