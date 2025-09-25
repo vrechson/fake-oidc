@@ -93,6 +93,9 @@ func (s *inmemStorage) SetUserinfoFromRequest(ctx context.Context, userinfo *oid
 	}
 
 	// Add custom claims
+	if userinfo.Claims == nil {
+		userinfo.Claims = make(map[string]any)
+	}
 	for key, value := range user.customClaims {
 		userinfo.Claims[key] = value
 	}
@@ -149,6 +152,9 @@ func (s *inmemStorage) SetUserinfoFromToken(ctx context.Context, userinfo *oidc.
 	}
 
 	// Add custom claims
+	if userinfo.Claims == nil {
+		userinfo.Claims = make(map[string]any)
+	}
 	for key, value := range user.customClaims {
 		userinfo.Claims[key] = value
 	}

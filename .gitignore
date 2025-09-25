@@ -16,6 +16,4 @@ config-no-tls.json
 # Build artifacts
 fake-oidc
 *.exe
-
-# Test directory (contains test scripts and data)
-test/
+main
