@@ -8,13 +8,19 @@ import (
 )
 
 type client struct {
-	config config
-	id     string
-	secret string
+	config    config
+	appConfig *Config
+	id        string
+	secret    string
 }
 
-func newClient(config config) clientWithRedirectGlobs {
-	c := &client{config: config, id: "dev-client", secret: "secure-secret"}
+func newClient(config config, appConfig *Config) clientWithRedirectGlobs {
+	c := &client{
+		config:    config,
+		appConfig: appConfig,
+		id:        appConfig.Client.ID,
+		secret:    appConfig.Client.Secret,
+	}
 	return clientWithRedirectGlobs{c}
 }
 
@@ -98,10 +104,10 @@ var _ op.HasRedirectGlobs = (*client)(nil)
 
 func (c *client) RedirectURIGlobs() []string {
 	// op uses bmatcuk/doublestar package to match globs
-	return []string{"**"}
+	return c.appConfig.Client.RedirectURIs
 }
 
 func (c *client) PostLogoutRedirectURIGlobs() []string {
 	// op uses bmatcuk/doublestar package to match globs
-	return []string{"**"}
+	return c.appConfig.Client.PostLogoutRedirectURIs
 }

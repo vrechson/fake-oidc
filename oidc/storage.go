@@ -6,8 +6,9 @@ import (
 )
 
 type inmemStorage struct {
-	config config
-	client clientWithRedirectGlobs
+	config    config
+	appConfig *Config
+	client    clientWithRedirectGlobs
 
 	signingKey *signingKey
 
@@ -22,10 +23,11 @@ type inmemStorage struct {
 	refreshTokensByID    map[string]*refreshToken
 }
 
-func newStorage(config config) *inmemStorage {
+func newStorage(config config, appConfig *Config) *inmemStorage {
 	return &inmemStorage{
-		config: config,
-		client: newClient(config),
+		config:    config,
+		appConfig: appConfig,
+		client:    newClient(config, appConfig),
 
 		signingKey: makeAKey(),
 

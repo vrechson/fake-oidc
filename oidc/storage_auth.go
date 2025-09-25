@@ -17,6 +17,20 @@ func (s *inmemStorage) CreateAuthRequest(ctx context.Context, req *oidc.AuthRequ
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	// Check PKCE requirements
+	if s.appConfig.Features.RequirePKCE {
+		if req.CodeChallenge == "" {
+			return nil, errors.New("PKCE is required but code_challenge parameter is missing")
+		}
+		if req.CodeChallengeMethod == "" {
+			return nil, errors.New("PKCE is required but code_challenge_method parameter is missing")
+		}
+		// Validate code challenge method
+		if req.CodeChallengeMethod != "S256" && req.CodeChallengeMethod != "plain" {
+			return nil, errors.New("unsupported code_challenge_method: " + string(req.CodeChallengeMethod))
+		}
+	}
+
 	authRequest := &authRequest{
 		id: uuid.New().String(),
 

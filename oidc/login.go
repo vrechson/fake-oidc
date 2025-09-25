@@ -2,14 +2,11 @@ package oidc
 
 import (
 	"context"
-	"crypto/sha1"
 	"embed"
-	"encoding/hex"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
-	"strings"
 )
 
 var (
@@ -23,6 +20,24 @@ func loginForm(s *inmemStorage, buildCallbackURL func(context.Context, string) s
 	return func(w http.ResponseWriter, r *http.Request) {
 		authRequestID := r.FormValue("authRequestID")
 		username := r.FormValue("username")
+
+		// Validate authRequestID exists
+		if authRequestID == "" {
+			slog.Error("missing authRequestID parameter")
+			http.Error(w, "Missing authentication request ID", http.StatusBadRequest)
+			return
+		}
+
+		// Check if auth request exists
+		s.lock.Lock()
+		_, exists := s.authRequests[authRequestID]
+		s.lock.Unlock()
+
+		if !exists {
+			slog.Error("auth request not found in login form", "authRequestID", authRequestID)
+			http.Error(w, "Invalid authentication request", http.StatusBadRequest)
+			return
+		}
 
 		// if a username is set, skip the form and go straight to login
 		// this is used by automated tests to login
@@ -49,7 +64,14 @@ func loginPost(s *inmemStorage, buildCallbackURL func(context.Context, string) s
 
 		if len(username) == 0 {
 			slog.Error("username too short")
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, "Username is required", http.StatusBadRequest)
+			return
+		}
+
+		if authRequestID == "" {
+			slog.Error("missing authRequestID parameter in POST")
+			http.Error(w, "Missing authentication request ID", http.StatusBadRequest)
+			return
 		}
 
 		completeLogin(username, authRequestID, w, r, s, buildCallbackURL)
@@ -67,6 +89,14 @@ func completeLogin(
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
+	// Check if auth request exists
+	authRequest, exists := s.authRequests[authRequestID]
+	if !exists {
+		slog.Error("auth request not found", "authRequestID", authRequestID)
+		http.Error(w, "Invalid authentication request", http.StatusBadRequest)
+		return
+	}
+
 	var existingUser *user
 	for _, v := range s.users {
 		if v.username == username {
@@ -75,19 +105,14 @@ func completeLogin(
 	}
 
 	if existingUser == nil {
-		h := sha1.New()
-		h.Write([]byte(username))
-		user := user{
-			id:       hex.EncodeToString(h.Sum(nil)),
-			name:     strings.ToUpper(username[:1]) + username[1:],
-			username: username,
-		}
-		s.users[user.id] = &user
-		existingUser = &user
+		// Create user from configuration
+		user := createUserFromConfig(username, s.appConfig.UserData.DefaultUser)
+		s.users[user.id] = user
+		existingUser = user
 	}
 
-	s.authRequests[authRequestID].subject = existingUser.id
-	s.authRequests[authRequestID].done = true
+	authRequest.subject = existingUser.id
+	authRequest.done = true
 
 	callbackURL := buildCallbackURL(r.Context(), authRequestID)
 	http.Redirect(w, r, callbackURL, http.StatusTemporaryRedirect)

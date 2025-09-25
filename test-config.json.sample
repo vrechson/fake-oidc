@@ -1,0 +1,56 @@
+{
+  "server": {
+    "host": "",
+    "port": "7837",
+    "tls": {
+      "enabled": false,
+      "cert_file": "",
+      "key_file": ""
+    }
+  },
+  "client": {
+    "id": "test-client",
+    "secret": "test-secret",
+    "redirect_uris": ["**"],
+    "post_logout_redirect_uris": ["**"]
+  },
+  "user_data": {
+    "default_user": {
+      "id": "user456",
+      "username": "testuser",
+      "name": "Test User",
+      "email": "testuser@example.com",
+      "email_verified": true,
+      "profile": {
+        "first_name": "Test",
+        "last_name": "User",
+        "nickname": "testy",
+        "preferred_username": "testuser"
+      },
+      "address": {
+        "formatted": "456 Test St, Test City, TC 54321, USA",
+        "street_address": "456 Test St",
+        "locality": "Test City",
+        "region": "TC",
+        "postal_code": "54321",
+        "country": "USA"
+      },
+      "phone_number": "+1-555-987-6543",
+      "phone_number_verified": true,
+      "custom_claims": {
+        "department": "Testing",
+        "role": "Tester"
+      }
+    }
+  },
+  "issuer": {
+    "url": ""
+  },
+  "features": {
+    "allow_insecure": true,
+    "enable_logging": true,
+    "require_pkce": true,
+    "supported_scopes": ["openid", "profile", "email"],
+    "supported_claims": ["sub", "name", "email", "email_verified"]
+  }
+}

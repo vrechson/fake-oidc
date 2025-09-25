@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OIDC Flow Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .step { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .step h3 { margin-top: 0; color: #333; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        .code { background: #f5f5f5; padding: 10px; border-radius: 3px; font-family: monospace; }
+        .result { background: #e8f5e8; padding: 10px; border-radius: 3px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Fake OIDC Server Test</h1>
+    
+    <div class="step">
+        <h3>Step 1: Start OIDC Authorization Flow</h3>
+        <p>Click the button below to start the OIDC authorization flow:</p>
+        <button onclick="startOIDCFlow()">Login with OIDC</button>
+        <p><strong>What happens:</strong> This redirects to the OIDC server's <code>/authorize</code> endpoint, which creates an auth request and redirects to the login form.</p>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Login Form</h3>
+        <p>After clicking the button above, you'll be redirected to the login form where you can enter any username.</p>
+        <p><strong>What happens:</strong> The server shows a login form at <code>/login?authRequestID=...</code></p>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Authorization Code</h3>
+        <p>After successful login, you'll be redirected back here with an authorization code:</p>
+        <div id="callback-result" class="result" style="display: none;">
+            <strong>Authorization Code:</strong> <span id="auth-code"></span><br>
+            <strong>State:</strong> <span id="state"></span>
+        </div>
+    </div>
+
+    <div class="step">
+        <h3>Step 4: Exchange Code for Tokens</h3>
+        <p>Use the authorization code to get access tokens:</p>
+        <button onclick="exchangeCodeForTokens()" id="exchange-btn" style="display: none;">Exchange Code for Tokens</button>
+        <div id="token-result" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="step">
+        <h3>Manual Testing</h3>
+        <p>You can also test manually with curl:</p>
+        <div class="code">
+            # Start authorization flow<br>
+            curl -k "https://gauss.lemonslab.me:7835/authorize?client_id=dev-client&redirect_uri=http%3A//localhost%3A3000/callback&response_type=code&scope=openid%20profile%20email&state=test123"<br><br>
+            
+            # Exchange code for tokens (replace CODE with actual code)<br>
+            curl -k -X POST "https://gauss.lemonslab.me:7835/oauth/token" \<br>
+            &nbsp;&nbsp;-H "Content-Type: application/x-www-form-urlencoded" \<br>
+            &nbsp;&nbsp;-d "grant_type=authorization_code" \<br>
+            &nbsp;&nbsp;-d "code=CODE" \<br>
+            &nbsp;&nbsp;-d "redirect_uri=http://localhost:3000/callback" \<br>
+            &nbsp;&nbsp;-u "dev-client:secure-secret"
+        </div>
+    </div>
+
+    <script>
+        function startOIDCFlow() {
+            const params = new URLSearchParams({
+                client_id: 'dev-client',
+                redirect_uri: window.location.origin + '/callback',
+                response_type: 'code',
+                scope: 'openid profile email',
+                state: 'test123'
+            });
+            
+            window.location.href = 'https://gauss.lemonslab.me:7835/authorize?' + params;
+        }
+        
+        // Handle callback
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code) {
+            document.getElementById('auth-code').textContent = code;
+            document.getElementById('state').textContent = state;
+            document.getElementById('callback-result').style.display = 'block';
+            document.getElementById('exchange-btn').style.display = 'inline-block';
+        }
+        
+        async function exchangeCodeForTokens() {
+            const code = document.getElementById('auth-code').textContent;
+            
+            try {
+                const response = await fetch('https://gauss.lemonslab.me:7835/oauth/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': 'Basic ' + btoa('dev-client:secure-secret')
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code: code,
+                        redirect_uri: window.location.origin + '/callback'
+                    })
+                });
+                
+                const tokens = await response.json();
+                document.getElementById('token-result').innerHTML = 
+                    '<strong>Tokens received:</strong><br><pre>' + JSON.stringify(tokens, null, 2) + '</pre>';
+                document.getElementById('token-result').style.display = 'block';
+            } catch (error) {
+                document.getElementById('token-result').innerHTML = 
+                    '<strong>Error:</strong> ' + error.message;
+                document.getElementById('token-result').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
